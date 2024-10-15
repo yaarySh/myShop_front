@@ -61,7 +61,7 @@
     </div>
 
     <script>
-      const HOST = "http://127.0.0.1:8000";
+      const HOST = "https://myshop-n11a.onrender.com";
 
       let isStaff = false;
       // Function to set the Authorization token for axios
@@ -160,7 +160,7 @@
             // Create product item element
             const productItem = document.createElement("a");
             productItem.className = "list-group-item list-group-item-action";
-            productItem.href = `/front/product.html?id=${product.id}`;
+            productItem.href = `/product.html?id=${product.id}`;
 
             // Add product details including category names and image
             productItem.innerHTML = `

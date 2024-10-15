@@ -42,7 +42,7 @@
         const password = document.getElementById("password").value;
 
         try {
-          const response = await axios.post("http://127.0.0.1:8000/users/login/", {
+          const response = await axios.post("https://myshop-n11a.onrender.com/users/login/", {
             username: username,
             password: password,
           });
