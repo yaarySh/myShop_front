@@ -178,40 +178,57 @@
             const categoryNames = product.category.map((cat) => cat.name).join(", ") || "No Category";
 
             // Create product item element
-            const productItem = document.createElement("a");
-            productItem.className = "list-group-item list-group-item-action";
-            productItem.href = `/product.html?id=${product.id}`;
+            const productItem = document.createElement("div");
+            productItem.className = "card";
+            productItem.style = "width: 18rem;";
 
             // Add product details including category names and image
             productItem.innerHTML = `
-              <strong>${product.name}</strong> - $${product.price}
-              <br><em>Category: ${categoryNames}</em>
-              <br>
-              <img src="${HOST}${product.image}" alt="${product.name}" class="img-thumbnail" style="max-width: 100px; max-height: 100px; margin-top: 5px;">
+                <img src="${HOST}${product.image}" alt="${product.name}" class="card-img-top" style="max-width: 100%; max-height: 100px; margin-top: 5px;">
+                <div class="card-body">
+                    <h5 class="card-title">${product.name}</h5>
+                    <p class="card-text">$${product.price}</p>
+                    <p><em>Category: ${categoryNames}</em></p>
+
+                    <!-- Quantity Input and Add to Cart Button -->
+                    <div class="form-group">
+                        <label for="quantity_${product.id}">Quantity:</label>
+                        <input type="number" id="quantity_${product.id}" class="form-control" value="1" min="1">
+                    </div>
+                    <button class="btn btn-primary add-to-cart-btn" data-product-id="${product.id}">Add to Cart</button>
+                </div>
             `;
 
-            // Conditionally add the delete link if the user is staff
-            if (isStaff) {
-              const deleteLink = document.createElement("a");
-              deleteLink.className = "text-danger ml-3";
-              deleteLink.href = "#"; // Prevent default link behavior
-              deleteLink.innerText = "DELETE";
-              deleteLink.onclick = async (event) => {
-                event.preventDefault(); // Prevent default anchor click behavior
-                if (confirm("Are you sure you want to delete this product?")) {
-                  try {
-                    await axios.delete(`${HOST}/products/${product.id}/`); // API URL to delete product
-                    fetchProducts(); // Refresh product list after deletion
-                  } catch (error) {
-                    handleUnauthorizedError(error); // Handle unauthorized error
-                    console.error("Error deleting product:", error);
-                    alert("Failed to delete product.");
+            // Add the "Add to Cart" button functionality
+            const addToCartBtn = productItem.querySelector(".add-to-cart-btn");
+            addToCartBtn.addEventListener("click", async () => {
+              const quantity = document.getElementById(`quantity_${product.id}`).value;
+              const token = localStorage.getItem("token");
+
+              if (!token) {
+                alert("You must be logged in to add items to the cart.");
+                return;
+              }
+
+              try {
+                const response = await axios.post(
+                  `${HOST}/carts/cart/add/`,
+                  {
+                    product_id: product.id,
+                    quantity: quantity,
+                  },
+                  {
+                    headers: {
+                      Authorization: `Token ${token}`,
+                    },
                   }
-                }
-              };
-              // Append the delete link to the product item
-              productItem.appendChild(deleteLink);
-            }
+                );
+                alert(response.data.success); // Display success message
+              } catch (error) {
+                console.error("Error adding product to cart:", error);
+                alert("Failed to add product to cart.");
+              }
+            });
 
             // Append the product item to the list
             productList.appendChild(productItem);
