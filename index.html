@@ -66,7 +66,8 @@
       let isStaff = false;
 
       // Function to set the Authorization token for axios
-      function setAuthToken(token) {
+      function setAuthToken() {
+        const token = localStorage.getItem("token");
         if (token) {
           axios.defaults.headers.common["Authorization"] = `Token ${token}`;
         } else {
@@ -77,6 +78,9 @@
       // Function to handle 401 errors and redirect to login page
       function handleUnauthorizedError(error) {
         if (error.response && error.response.status === 401) {
+          // If 401 error, ensure token is invalidated
+          localStorage.removeItem("token");
+          localStorage.removeItem("username");
           window.location.href = "/login.html"; // Redirect to login page
         }
       }
@@ -86,8 +90,11 @@
         const userName = localStorage.getItem("username");
         const token = localStorage.getItem("token");
 
-        if (userName) {
+        if (userName && token) {
           document.getElementById("user-name").innerText = `Welcome, ${userName}!`;
+
+          // Set the token before making API requests
+          setAuthToken();
 
           // Fetch user details to check if the user is an admin
           try {
@@ -104,6 +111,9 @@
             handleUnauthorizedError(error); // Handle unauthorized error
             console.error("Error fetching user details:", error);
           }
+        } else {
+          // If no username or token, redirect to login
+          window.location.href = "/login.html";
         }
       }
 
@@ -123,12 +133,12 @@
           categoryList.innerHTML = "";
           for (let i = 0; i < categories.length; i++) {
             categoryList.innerHTML += `
-                    <a href="#" class="badge badge-primary mr-2 d-inline-flex align-items-center" onclick="fetchProducts(${categories[i].id})" style="padding: 10px;">
-                      <div class="d-flex align-items-center">
-                        <img src="${HOST}${categories[i].image}" alt="${categories[i].name}" class="img-fluid img-thumbnail mr-2" style="max-width: 175px; max-height: 175px;">
-                        <span>${categories[i].name} - ${categories[i].popularity}</span>
-                      </div>
-                    </a>`;
+              <a href="#" class="badge badge-primary mr-2 d-inline-flex align-items-center" onclick="fetchProducts(${categories[i].id})" style="padding: 10px;">
+                <div class="d-flex align-items-center">
+                  <img src="${HOST}${categories[i].image}" alt="${categories[i].name}" class="img-fluid img-thumbnail mr-2" style="max-width: 175px; max-height: 175px;">
+                  <span>${categories[i].name} - ${categories[i].popularity}</span>
+                </div>
+              </a>`;
           }
 
           // Populate category dropdown in the form
