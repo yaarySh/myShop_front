@@ -21,7 +21,10 @@
 
       <!-- User Name Display -->
       <div id="user-name" class="mb-3"></div>
-
+      <div class="d-flex justify-content-between">
+        <div id="user-name" class="mb-3"></div>
+        <button id="logout-btn" class="btn btn-danger">Logout</button>
+      </div>
       <div id="category-list">
         <!-- Categories will be dynamically inserted here -->
       </div>
@@ -62,9 +65,9 @@
 
     <script>
       const HOST = "https://myshop-n11a.onrender.com";
-
+    
       let isStaff = false;
-
+    
       // Function to set the Authorization token for axios
       function setAuthToken() {
         const token = localStorage.getItem("token");
@@ -74,7 +77,7 @@
           delete axios.defaults.headers.common["Authorization"];
         }
       }
-
+    
       // Function to handle 401 errors and redirect to login page
       function handleUnauthorizedError(error) {
         if (error.response && error.response.status === 401) {
@@ -84,26 +87,53 @@
           window.location.href = "/login.html"; // Redirect to login page
         }
       }
-
+    
+      // Function to handle logout
+      async function logout() {
+        const token = localStorage.getItem("token");
+    
+        if (token) {
+          try {
+            // Send request to logout endpoint on the server
+            await axios.post(`${HOST}/users/logout/`, {}, {
+              headers: {
+                Authorization: `Token ${token}`,
+              },
+            });
+    
+            // Clear local storage and redirect to login page
+            localStorage.removeItem("token");
+            localStorage.removeItem("username");
+            window.location.href = "/login.html";
+          } catch (error) {
+            console.error("Error during logout:", error);
+            alert("Logout failed.");
+          }
+        } else {
+          // Fallback if no token found in local storage
+          window.location.href = "/login.html";
+        }
+      }
+    
       // Function to display the user's name
       async function setUserName() {
         const userName = localStorage.getItem("username");
         const token = localStorage.getItem("token");
-
+    
         if (userName && token) {
           document.getElementById("user-name").innerText = `Welcome, ${userName}!`;
-
+    
           // Set the token before making API requests
           setAuthToken();
-
+    
           // Fetch user details to check if the user is an admin
           try {
             const response = await axios.get(`${HOST}/users/me/`); // Adjust to your endpoint
             const userDetails = response.data;
-
+    
             // Set global isStaff flag if the user is staff
             isStaff = userDetails.is_staff || userDetails.is_admin;
-
+    
             if (isStaff) {
               document.getElementById("add-product-container").style.display = "block"; // Show add product form
             }
@@ -116,18 +146,18 @@
           window.location.href = "/login.html";
         }
       }
-
+    
       // Function to fetch all categories and products
       async function fetchAll() {
         await fetchCategories();
         await fetchProducts();
       }
-
+    
       async function fetchCategories() {
         try {
           const response = await axios.get(`${HOST}/products/categories`);
           const categories = response.data;
-
+    
           // Populate category list for display
           const categoryList = document.getElementById("category-list");
           categoryList.innerHTML = "";
@@ -140,7 +170,7 @@
                 </div>
               </a>`;
           }
-
+    
           // Populate category dropdown in the form
           const categoryDropdown = document.getElementById("productCategory");
           categoryDropdown.innerHTML = ""; // Clear dropdown before adding new options
@@ -155,33 +185,33 @@
           console.error("Error fetching categories:", error);
         }
       }
-
+    
       async function fetchProducts(category_id) {
         try {
           let url = `${HOST}/products/`; // Base API URL for fetching products
-
+    
           if (category_id) {
             url += `?category_id=${category_id}`; // Append category filter if provided
           }
-
+    
           const response = await axios.get(url); // Make the GET request to the API
           const products = response.data;
           console.log("Fetched products:", products);
-
+    
           const productList = document.getElementById("product-list");
           productList.innerHTML = ""; // Clear the list before adding new items
-
+    
           for (let i = 0; i < products.length; i++) {
             const product = products[i];
-
+    
             // Mapping category names for display
             const categoryNames = product.category.map((cat) => cat.name).join(", ") || "No Category";
-
+    
             // Create product item element
             const productItem = document.createElement("div");
             productItem.className = "card";
             productItem.style = "width: 18rem;";
-
+    
             // Add product details including category names and image
             productItem.innerHTML = `
                 <img src="${HOST}${product.image}" alt="${product.name}" class="card-img-top" style="max-width: 140px; max-height: 140px; margin-top: 5px; margin-left: 66px;">
@@ -189,7 +219,7 @@
                     <h5 class="card-title">${product.name}</h5>
                     <p class="card-text">$${product.price}</p>
                     <p><em>Category: ${categoryNames}</em></p>
-
+    
                     <!-- Quantity Input and Add to Cart Button -->
                     <div class="form-group">
                         <label for="quantity_${product.id}">Quantity:</label>
@@ -198,18 +228,18 @@
                     <button class="btn btn-primary add-to-cart-btn" data-product-id="${product.id}">Add to Cart</button>
                 </div>
             `;
-
+    
             // Add the "Add to Cart" button functionality
             const addToCartBtn = productItem.querySelector(".add-to-cart-btn");
             addToCartBtn.addEventListener("click", async () => {
               const quantity = document.getElementById(`quantity_${product.id}`).value;
               const token = localStorage.getItem("token");
-
+    
               if (!token) {
                 alert("You must be logged in to add items to the cart.");
                 return;
               }
-
+    
               try {
                 const response = await axios.post(
                   `${HOST}/carts/cart/add/`,
@@ -229,7 +259,7 @@
                 alert("Failed to add product to cart.");
               }
             });
-
+    
             // Append the product item to the list
             productList.appendChild(productItem);
           }
@@ -240,18 +270,18 @@
           productList.innerHTML = '<div class="alert alert-danger">Failed to load products.</div>';
         }
       }
-
+    
       // Function to add a new product
       async function addProduct(event) {
         event.preventDefault(); // Prevent form submission
-
+    
         // Gather form data
         const name = document.getElementById("productName").value;
         const description = document.getElementById("productDescription").value;
         const price = document.getElementById("productPrice").value;
         const categoryId = document.getElementById("productCategory").value; // Selected category
         const imageFile = document.getElementById("productImage").files[0]; // Selected image file
-
+    
         // Create FormData to send as multipart/form-data
         const formData = new FormData();
         formData.append("name", name);
@@ -261,13 +291,13 @@
         if (imageFile) {
           formData.append("image", imageFile); // Attach image if provided
         }
-
+    
         // Send request to add product
         try {
           const response = await axios.post(`${HOST}/products/`, formData, {
             headers: {"Content-Type": "multipart/form-data"},
           });
-
+    
           // Refresh product list and hide the form
           fetchProducts();
           document.getElementById("add-product-container").style.display = "none";
@@ -277,11 +307,14 @@
           alert("Failed to add product.");
         }
       }
-
+    
       // Set up the event listener for the form submission
       document.getElementById("add-product-form").addEventListener("submit", addProduct);
-
-      // On page load, set the user name and fetch all data
+    
+      // Set up event listener for the logout button
+      document.getElementById("logout-btn").addEventListener("click", logout);
+    
+      // Initialize
       setUserName();
       fetchAll();
     </script>
